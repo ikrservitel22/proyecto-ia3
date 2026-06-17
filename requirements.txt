@@ -1,0 +1,7 @@
+flask
+requests
+numpy
+faster-whisper
+ctranslate2
+duckduckgo-search
+python-dotenv

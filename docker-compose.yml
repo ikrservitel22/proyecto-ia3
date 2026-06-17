@@ -1,0 +1,28 @@
+services:
+
+  app:
+    build: .
+    container_name: proyecto-ia3
+
+    ports:
+      - "2224:22"
+      - "11434:11434"
+      - "5000:5000"
+
+    volumes:
+      - .:/app
+      - db_data:/app/database
+      - whisper_cache:/root/.cache
+      - ollama_data:/root/.ollama
+      - /run/user/1000/pulse:/run/user/1000/pulse
+      - /home/nicolas/.config/pulse:/root/.config/pulse:ro
+
+    environment:
+      - PULSE_SERVER=unix:/run/user/1000/pulse/native
+
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  whisper_cache:
+  ollama_data:

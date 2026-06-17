@@ -1,0 +1,70 @@
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:jira_tools.py[m[36m:[m[32m8[m[36m:[m    def __init__(self, user, [1;31mtoken[m):
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:jira_tools.py[m[36m:[m[32m9[m[36m:[m        self.auth = HTTPBasicAuth(user, [1;31mtoken[m)
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m297[m[36m:[mdef _stream_ollama(messages, on_[1;31mtoken[m):
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m298[m[36m:[m    """Llama a Ollama en modo streaming e invoca on_[1;31mtoken[m por cada fragmento."""
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m309[m[36m:[m                [1;31mtoken[m = chunk.get("message", {}).get("content", "")
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m310[m[36m:[m                if [1;31mtoken[m:
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m311[m[36m:[m                    on_[1;31mtoken[m([1;31mtoken[m)
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m315[m[36m:[m        on_[1;31mtoken[m(f"\n[Error Ollama: {e}]")
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m526[m[36m:[m        [1;31mtoken[ms_extra = []
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m530[m[36m:[m            lambda t: [1;31mtoken[ms_extra.append(t)
+[35m240a49a5b4c70b2a0547ebeaa593d0e20cd2689d:server_llamadas.py[m[36m:[m[32m532[m[36m:[m        respuesta_extra = "".join([1;31mtoken[ms_extra).strip()
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:jira_tools.py[m[36m:[m[32m8[m[36m:[m    def __init__(self, user, [1;31mtoken[m):
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:jira_tools.py[m[36m:[m[32m9[m[36m:[m        self.auth = HTTPBasicAuth(user, [1;31mtoken[m)
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m297[m[36m:[mdef _stream_ollama(messages, on_[1;31mtoken[m):
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m298[m[36m:[m    """Llama a Ollama en modo streaming e invoca on_[1;31mtoken[m por cada fragmento."""
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m309[m[36m:[m                [1;31mtoken[m = chunk.get("message", {}).get("content", "")
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m310[m[36m:[m                if [1;31mtoken[m:
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m311[m[36m:[m                    on_[1;31mtoken[m([1;31mtoken[m)
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m315[m[36m:[m        on_[1;31mtoken[m(f"\n[Error Ollama: {e}]")
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m526[m[36m:[m        [1;31mtoken[ms_extra = []
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m530[m[36m:[m            lambda t: [1;31mtoken[ms_extra.append(t)
+[35me79bd34b0339bc04ee96797c9052342ef33b269a:server_llamadas.py[m[36m:[m[32m532[m[36m:[m        respuesta_extra = "".join([1;31mtoken[ms_extra).strip()
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m316[m[36m:[mdef _stream_ollama(messages, on_[1;31mtoken[m):
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m317[m[36m:[m    """Llama a Ollama en modo streaming e invoca on_[1;31mtoken[m por cada fragmento."""
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m332[m[36m:[m                [1;31mtoken[m = chunk.get("message", {}).get("content", "")
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m333[m[36m:[m                if [1;31mtoken[m:
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m334[m[36m:[m                    on_[1;31mtoken[m([1;31mtoken[m)
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m341[m[36m:[m        on_[1;31mtoken[m(f"\n[Error: Timeout de Ollama después de 120s]")
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m343[m[36m:[m        on_[1;31mtoken[m(f"\n[Error: No se puede conectar a Ollama: {ce}]")
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m345[m[36m:[m        on_[1;31mtoken[m(f"\n[Error Ollama: {type(e).__name__}: {str(e)[:100]}]")
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m349[m[36m:[m    [1;31mtoken[ms = []
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m350[m[36m:[m    def on_[1;31mtoken[m([1;31mtoken[m):
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m351[m[36m:[m        [1;31mtoken[ms.append([1;31mtoken[m)
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m352[m[36m:[m    _stream_ollama(messages, on_[1;31mtoken[m)
+[35m6672fda8ccb5c863d63d3a63a7b84d2fa248daf6:server_llamadas.py[m[36m:[m[32m353[m[36m:[m    return "".join([1;31mtoken[ms).strip()
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m316[m[36m:[mdef _stream_ollama(messages, on_[1;31mtoken[m):
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m317[m[36m:[m    """Llama a Ollama en modo streaming e invoca on_[1;31mtoken[m por cada fragmento."""
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m332[m[36m:[m                [1;31mtoken[m = chunk.get("message", {}).get("content", "")
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m333[m[36m:[m                if [1;31mtoken[m:
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m334[m[36m:[m                    on_[1;31mtoken[m([1;31mtoken[m)
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m341[m[36m:[m        on_[1;31mtoken[m(f"\n[Error: Timeout de Ollama después de 120s]")
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m343[m[36m:[m        on_[1;31mtoken[m(f"\n[Error: No se puede conectar a Ollama: {ce}]")
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m345[m[36m:[m        on_[1;31mtoken[m(f"\n[Error Ollama: {type(e).__name__}: {str(e)[:100]}]")
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m349[m[36m:[m    [1;31mtoken[ms = []
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m350[m[36m:[m    def on_[1;31mtoken[m([1;31mtoken[m):
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m351[m[36m:[m        [1;31mtoken[ms.append([1;31mtoken[m)
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m352[m[36m:[m    _stream_ollama(messages, on_[1;31mtoken[m)
+[35mb877b0840972febd8d4cd0de405cc991f42e00cd:server_llamadas.py[m[36m:[m[32m353[m[36m:[m    return "".join([1;31mtoken[ms).strip()
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m297[m[36m:[mdef _stream_ollama(messages, on_[1;31mtoken[m):
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m298[m[36m:[m    """Llama a Ollama en modo streaming e invoca on_[1;31mtoken[m por cada fragmento."""
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m313[m[36m:[m                [1;31mtoken[m = chunk.get("message", {}).get("content", "")
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m314[m[36m:[m                if [1;31mtoken[m:
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m315[m[36m:[m                    on_[1;31mtoken[m([1;31mtoken[m)
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m322[m[36m:[m        on_[1;31mtoken[m(f"\n[Error: Timeout de Ollama después de 120s]")
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m324[m[36m:[m        on_[1;31mtoken[m(f"\n[Error: No se puede conectar a Ollama: {ce}]")
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m326[m[36m:[m        on_[1;31mtoken[m(f"\n[Error Ollama: {type(e).__name__}: {str(e)[:100]}]")
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m330[m[36m:[m    [1;31mtoken[ms = []
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m331[m[36m:[m    def on_[1;31mtoken[m([1;31mtoken[m):
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m332[m[36m:[m        [1;31mtoken[ms.append([1;31mtoken[m)
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m333[m[36m:[m    _stream_ollama(messages, on_[1;31mtoken[m)
+[35mce80dbc4fb239528bbd9acd44e6e1c93e4a2d610:server_llamadas.py[m[36m:[m[32m334[m[36m:[m    return "".join([1;31mtoken[ms).strip()
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m297[m[36m:[mdef _stream_ollama(messages, on_[1;31mtoken[m):
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m298[m[36m:[m    """Llama a Ollama en modo streaming e invoca on_[1;31mtoken[m por cada fragmento."""
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m309[m[36m:[m                [1;31mtoken[m = chunk.get("message", {}).get("content", "")
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m310[m[36m:[m                if [1;31mtoken[m:
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m311[m[36m:[m                    on_[1;31mtoken[m([1;31mtoken[m)
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m315[m[36m:[m        on_[1;31mtoken[m(f"\n[Error Ollama: {e}]")
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m526[m[36m:[m        [1;31mtoken[ms_extra = []
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m530[m[36m:[m            lambda t: [1;31mtoken[ms_extra.append(t)
+[35m9ae7d46a0d7283ddf1a84b9d675de123fe866e9f:server_llamadas.py[m[36m:[m[32m532[m[36m:[m        respuesta_extra = "".join([1;31mtoken[ms_extra).strip()
