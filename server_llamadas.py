@@ -36,8 +36,6 @@ from jira_tools import obtener_board, crear_tarea
 
 
 
-
-
 TOOLS = {
 
     "obtener_board": {
