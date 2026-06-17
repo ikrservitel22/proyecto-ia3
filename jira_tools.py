@@ -50,7 +50,7 @@ class APIClient:
 client   = APIClient(USER, TOKEN)
 
 
-DEFAULT_ACCOUNT_ID = "712020:dd73a148-eb0f-45b0-9538-84b2f441e190"
+DEFAULT_ACCOUNT_ID = "none"
 DEFAULT_EPIC_KEY   = "SERVITEL-76"   # épica por defecto si no se encuentra ninguna
 
 
