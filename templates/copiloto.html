@@ -308,6 +308,8 @@ function manejarMensaje(data) {
     if (data.type === 'tasks_saved') agregarTareasGuardadas(data.tasks);
     if (data.type === 'auth_request') mostrarAuthModal(data);
     if (data.type === 'notification') agregarNotificacion(data);
+    if (data.type === 'jira_synced') onJiraSynced(data);
+    if (data.type === 'jira_error')  onJiraError(data);
 }
 
 /* ---- SPINNER mientras analiza ---- */
@@ -734,6 +736,46 @@ function extraerTareas() {
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({texto: texto})
     }).finally(function() { sendBtn.disabled = false; textInput.focus(); });
+}
+
+/* ---- JIRA SYNC FEEDBACK ---- */
+function onJiraSynced(data) {
+    if (data.texto) {
+        document.querySelectorAll('.card-task[data-task-id="' + data.task_id + '"]').forEach(function(card) {
+            var t = card.querySelector('.card-task-titulo');
+            if (t) t.textContent = data.texto;
+            var inp = card.querySelector('input[data-field="texto"]');
+            if (inp) inp.value = data.texto;
+        });
+    }
+    document.querySelectorAll('.card-task[data-task-id="' + data.task_id + '"]').forEach(function(card) {
+        var meta = card.querySelector('.card-task-meta');
+        if (meta && !meta.querySelector('.jira-badge')) {
+            var b = document.createElement('a');
+            b.className = 'jira-badge';
+            b.href = 'https://andresoomax.atlassian.net/browse/' + data.jira_key;
+            b.target = '_blank';
+            b.style.cssText = 'background:#0052cc;color:#fff;padding:1px 8px;border-radius:8px;font-size:.65rem;font-weight:700;text-decoration:none;';
+            b.textContent = '\uD83D\uDD17 ' + data.jira_key;
+            meta.appendChild(b);
+        }
+    });
+    setStatus('Jira: ' + data.jira_key, false);
+}
+
+function onJiraError(data) {
+    document.querySelectorAll('.card-task[data-task-id="' + data.task_id + '"]').forEach(function(card) {
+        var meta = card.querySelector('.card-task-meta');
+        if (meta && !meta.querySelector('.jira-err')) {
+            var b = document.createElement('span');
+            b.className = 'jira-err';
+            b.title = data.error || '';
+            b.style.cssText = 'background:#f85149;color:#fff;padding:1px 8px;border-radius:8px;font-size:.65rem;font-weight:700;cursor:help;';
+            b.textContent = '\u26A0 Jira error';
+            meta.appendChild(b);
+        }
+    });
+    console.error('[JIRA ERROR]', data.error);
 }
 
 /* ---- UTIL ---- */

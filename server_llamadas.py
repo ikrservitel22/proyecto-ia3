@@ -36,6 +36,8 @@ from jira_tools import obtener_board, crear_tarea
 
 
 
+
+
 TOOLS = {
 
     "obtener_board": {
@@ -327,15 +329,15 @@ UMBRAL_SILENCIO = 300          # RMS mínimo para considerar que hay voz
 #   MIN: mínimo antes de poder cortar por silencio (evita fragmentos sin contexto)
 #   PAUSA: pausa natural entre frases que dispara el corte
 #   MAX: límite duro para no acumular demasiado audio sin transcribir
-VAD_CHUNK_MIN       = 6.0    # seg mínimos antes de poder cortar por silencio
-VAD_SILENCIO_CORTO  = 1.5    # seg de silencio → cortar y transcribir
-VAD_CHUNK_MAX       = 15.0   # seg máximos sin corte (frase muy larga)
-SILENCIO_DURACION   = VAD_SILENCIO_CORTO  # alias para grabar_hasta_silencio (modo no-streaming)
+VAD_CHUNK_MIN       = 10.0   # seg mínimos — menos chunks = menos carga CPU
+VAD_SILENCIO_CORTO  = 2.0    # seg de silencio → cortar
+VAD_CHUNK_MAX       = 25.0   # seg máximos sin corte
+SILENCIO_DURACION   = VAD_SILENCIO_CORTO  # alias para grabar_hasta_silencio
 
 # Fin de llamada
-SILENCIO_FIN_LLAMADA = 45.0  # seg de silencio total → asumir fin de llamada
+SILENCIO_FIN_LLAMADA = 60.0  # seg de silencio total → fin de llamada
 
-CHUNK = 1024                  # lectura ~64ms por iteración (CHUNK/RATE)
+CHUNK = 4096                  # lectura ~256ms por iteración — menos CPU en bucle VAD
 RATE  = 16000
 MIN_DURACION = 1.5
 
@@ -586,7 +588,7 @@ transcription_threads: list[threading.Thread] = []
 transcription_threads_lock = threading.Lock()
 
 # Semáforo: máximo 2 transcripciones Whisper en paralelo
-_transcribe_semaphore = threading.Semaphore(2)
+_transcribe_semaphore = threading.Semaphore(1)  # 1 sola transcripción a la vez — CPU limitada
 # Dedup: evita publicar el mismo fragmento dos veces (ffmpeg mezcla monitor+mic)
 _dedup_cache: dict = {}
 _dedup_lock  = threading.Lock()
@@ -598,7 +600,7 @@ _jira_semaphore = threading.Semaphore(2)
 # Temporizador para envío periódico a la IA (cada 60s de llamada continua)
 _ultimo_envio_ia = 0.0
 _envio_ia_lock   = threading.Lock()
-IA_ENVIO_INTERVALO = 60.0  # segundos entre envíos a IA durante llamada larga
+IA_ENVIO_INTERVALO = 99999.0  # Desactivado — solo procesar al fin de llamada
 
 
 
@@ -835,6 +837,29 @@ def create_task(task, estado="pendiente", proyecto="GENERAL"):
 
 
 
+def _inferir_nombre_proyecto(epic_summary: str) -> str:
+    """
+    Extrae el nombre del proyecto del summary de una épica.
+    Ejemplos:
+      'ServiAyuda - Módulo Cotizador'  → 'SERVIAYUDA'
+      'Shopify Descuentos al Piso'     → 'SHOPIFY'
+      'Desarrollo módulo login'        → 'DESARROLLO'
+    Toma la primera palabra significativa (>3 chars) en mayúsculas.
+    """
+    if not epic_summary:
+        return ""
+    # Si tiene " - " tomar lo que hay antes del guión
+    if " - " in epic_summary:
+        parte = epic_summary.split(" - ")[0].strip()
+    else:
+        parte = epic_summary.strip()
+    # Tomar primera palabra de más de 3 letras
+    for palabra in parte.split():
+        if len(palabra) > 3:
+            return palabra.upper()
+    return parte.split()[0].upper() if parte else ""
+
+
 def _sync_tarea_a_jira(task_final: dict, task_id: int):
     """Crea la tarea en Jira con semáforo propio — máx 2 creaciones concurrentes."""
     if not _jira_semaphore.acquire(timeout=120):
@@ -842,21 +867,51 @@ def _sync_tarea_a_jira(task_final: dict, task_id: int):
         publish({"type": "jira_error", "task_id": task_id, "error": "Timeout en cola Jira"})
         return
     try:
+        proyecto_raw = (task_final.get("proyecto") or "").strip()
+        summary_raw  = task_final["texto"]
+
+        # Si el proyecto es GENERAL (la IA no lo detectó), inferirlo desde la épica
+        # y reemplazar el prefijo GENERAL en el summary
+        if not proyecto_raw or proyecto_raw.upper() == "GENERAL":
+            from jira_tools import buscar_epica, _norm
+            texto_busqueda = summary_raw + " " + (task_final.get("contexto") or "")
+            epic_res = buscar_epica(texto_busqueda)
+            if epic_res["ok"]:
+                # Extraer el nombre del proyecto de la épica (primera palabra o palabras clave)
+                epic_summary = epic_res["summary"]
+                # Usar el summary de la épica como nombre del proyecto
+                # Normalizar: quitar prefijos tipo "SERVITEL -", tomar las primeras 2-3 palabras
+                nombre_proyecto = _inferir_nombre_proyecto(epic_summary)
+                if nombre_proyecto and nombre_proyecto.upper() != "GENERAL":
+                    proyecto_raw = nombre_proyecto
+                    # Reemplazar "GENERAL - " por el nombre real en el summary
+                    if summary_raw.upper().startswith("GENERAL - "):
+                        summary_raw = nombre_proyecto.upper() + " - " + summary_raw[len("GENERAL - "):]
+                    print(f"[JIRA] Proyecto inferido desde épica: {proyecto_raw!r}", flush=True)
+
         jira_res = crear_tarea(
-            summary=task_final["texto"],
+            summary=summary_raw,
             description=task_final["contexto"],
             duedate=task_final.get("plazo") or datetime.utcnow().date().isoformat(),
             startdate=task_final.get("fecha_inicio") or datetime.utcnow().date().isoformat(),
-            responsable=(task_final.get("responsable") or "").strip()
+            responsable=(task_final.get("responsable") or "").strip(),
+            proyecto=proyecto_raw
         )
         if jira_res["ok"]:
             jira_key = jira_res["data"].get("key")
             print(f"[JIRA OK] {jira_key} → tarea {task_id}", flush=True)
             conn = get_db_conn()
-            conn.execute("UPDATE tareas SET jira_key = ? WHERE id = ?", (jira_key, task_id))
+            # Si el summary cambió (proyecto inferido), actualizar también en DB
+            if summary_raw != task_final["texto"]:
+                conn.execute("UPDATE tareas SET texto = ?, jira_key = ? WHERE id = ?",
+                             (summary_raw, jira_key, task_id))
+            else:
+                conn.execute("UPDATE tareas SET jira_key = ? WHERE id = ?",
+                             (jira_key, task_id))
             conn.commit()
             conn.close()
-            publish({"type": "jira_synced", "task_id": task_id, "jira_key": jira_key})
+            publish({"type": "jira_synced", "task_id": task_id, "jira_key": jira_key,
+                     "texto": summary_raw})
         else:
             print(f"[JIRA ERROR] tarea {task_id}: {jira_res.get('error')}", flush=True)
             publish({"type": "jira_error", "task_id": task_id, "error": jira_res.get("error", "")})
@@ -1665,35 +1720,20 @@ def grabar_hasta_silencio(archivo_audio):
 
 
 
-def _wait_for_pending_transcriptions(timeout=15):
-
+def _wait_for_pending_transcriptions(timeout=30):
+    """Espera a que la cola de Whisper se vacíe (todos los chunks procesados)."""
     deadline = time.time() + timeout
-
-    while True:
-
-        with transcription_threads_lock:
-
-            threads = [t for t in transcription_threads if t.is_alive()]
-
-        if not threads:
-
-            return
-
+    while not _whisper_queue.empty():
         if time.time() >= deadline:
-
-            print(f"[TRANSCRIBE] Timeout esperando threads de transcripción ({len(threads)} activas)", flush=True)
-
+            pending = _whisper_queue.qsize()
+            print(f"[WHISPER] Timeout esperando cola ({pending} chunks pendientes)", flush=True)
             return
-
-        for t in threads:
-
-            remaining = deadline - time.time()
-
-            if remaining <= 0:
-
-                break
-
-            t.join(timeout=min(1.0, remaining))
+        time.sleep(0.5)
+    # Esperar también que el worker termine el chunk actual
+    try:
+        _whisper_queue.join()
+    except Exception:
+        pass
 
 
 
@@ -1868,12 +1908,76 @@ def encolar_extraccion_chunk(texto: str):
     _iniciar_worker_extraccion()
 
 
+# Cola de transcripción — 1 worker permanente, sin acumulación de threads
+_whisper_queue: queue.Queue = queue.Queue(maxsize=20)  # máx 20 chunks pendientes
+_whisper_worker_started = False
+_whisper_worker_lock    = threading.Lock()
+
+
+def _iniciar_whisper_worker():
+    """Lanza el worker de Whisper si no está corriendo."""
+    global _whisper_worker_started
+    with _whisper_worker_lock:
+        if _whisper_worker_started:
+            return
+        _whisper_worker_started = True
+    threading.Thread(target=_whisper_worker, daemon=True, name="whisper-worker").start()
+
+
+def _whisper_worker():
+    """
+    Worker único de Whisper. Procesa chunks de audio de a uno.
+    - Sin semáforo (ya es 1 solo worker)
+    - Si la cola está llena, el chunk más viejo se descarta silenciosamente
+    """
+    global _whisper_worker_started
+    print("[WHISPER] Worker iniciado", flush=True)
+    while True:
+        try:
+            item = _whisper_queue.get(timeout=120)
+        except queue.Empty:
+            with _whisper_worker_lock:
+                _whisper_worker_started = False
+            print("[WHISPER] Worker idle, terminando", flush=True)
+            break
+
+        fname = item.get("fname")
+        if not fname:
+            _whisper_queue.task_done()
+            continue
+
+        try:
+            segments, _ = model.transcribe(fname, language="es", vad_filter=True)
+            text = "".join(seg.text for seg in segments).strip()
+            if text:
+                _text_hash = hash(text.strip().lower())
+                _now = time.time()
+                with _dedup_lock:
+                    if _now - _dedup_cache.get(_text_hash, 0) < 3.0:
+                        pass  # duplicado
+                    else:
+                        _dedup_cache[_text_hash] = _now
+                        viejos = [k for k, v in _dedup_cache.items() if _now - v > 30]
+                        for k in viejos:
+                            del _dedup_cache[k]
+                        publish({"type": "transcription", "text": text})
+                        with accum_lock:
+                            global accumulated_transcript
+                            if accumulated_transcript:
+                                accumulated_transcript += "\n"
+                            accumulated_transcript += text
+        except Exception as e:
+            print(f"[WHISPER] Error transcribiendo: {e}", flush=True)
+        finally:
+            try:
+                os.remove(fname)
+            except Exception:
+                pass
+            _whisper_queue.task_done()
+
+
 def _transcribe_bytes_async(audio_bytes, publish_partial=True):
-    """
-    Escribe bytes PCM s16le a WAV temporal y lanza transcripción en background.
-    Usa semáforo para máximo 2 workers de Whisper simultáneos.
-    Solo acumula texto — NO llama a Ollama/IA desde aquí.
-    """
+    """Encola audio para transcripción. Si la cola está llena descarta el chunk más viejo."""
     try:
         fname = f"temp/stream_{uuid.uuid4().hex}.wav"
         os.makedirs("temp", exist_ok=True)
@@ -1883,60 +1987,24 @@ def _transcribe_bytes_async(audio_bytes, publish_partial=True):
             wf.setframerate(RATE)
             wf.writeframes(b"".join(audio_bytes))
 
-        def _worker(path):
-            current_thread = threading.current_thread()
-            _transcribe_semaphore.acquire()
+        try:
+            _whisper_queue.put_nowait({"fname": fname})
+        except queue.Full:
+            # Cola saturada — descartar chunk más viejo para hacer espacio
             try:
-                segments, _ = model.transcribe(path, language="es", vad_filter=True)
-                text = "".join(seg.text for seg in segments).strip()
-                if text:
-                    # Dedup: ignorar si el mismo texto ya se publicó en los últimos 3s
-                    _text_hash = hash(text.strip().lower())
-                    _now = time.time()
-                    with _dedup_lock:
-                        _last = _dedup_cache.get(_text_hash, 0)
-                        if _now - _last < 3.0:
-                            pass  # duplicado, ignorar
-                        else:
-                            _dedup_cache[_text_hash] = _now
-                            # limpiar entradas viejas
-                            viejos = [k for k, v in _dedup_cache.items() if _now - v > 10]
-                            for k in viejos: del _dedup_cache[k]
-                            publish({"type": "transcription", "text": text})
-                            with accum_lock:
-                                global accumulated_transcript
-                                if accumulated_transcript:
-                                    accumulated_transcript += "\n"
-                                accumulated_transcript += text
-                            # Encolar para extracción de tareas en background
-                            encolar_extraccion_chunk(text)
-            except Exception as e:
-                print(f"[TRANSCRIBE] Error: {e}", flush=True)
-            finally:
-                _transcribe_semaphore.release()
-                try:
-                    os.remove(path)
-                except Exception:
-                    pass
-                with transcription_threads_lock:
-                    try:
-                        transcription_threads.remove(current_thread)
-                    except ValueError:
-                        pass
+                old_item = _whisper_queue.get_nowait()
+                if old_item.get("fname"):
+                    os.remove(old_item["fname"])
+                _whisper_queue.task_done()
+            except Exception:
+                pass
+            _whisper_queue.put_nowait({"fname": fname})
+            print("[WHISPER] Cola llena, descartado chunk más viejo", flush=True)
 
-
-
-        worker = threading.Thread(target=_worker, args=(fname,), daemon=True)
-
-        with transcription_threads_lock:
-
-            transcription_threads.append(worker)
-
-        worker.start()
+        _iniciar_whisper_worker()
 
     except Exception as e:
-
-        print(f"[TRANSCRIBE] Error preparando chunk: {e}", flush=True)
+        print(f"[WHISPER] Error preparando chunk: {e}", flush=True)
 
 
 
@@ -2113,8 +2181,23 @@ Responde usando esta información.
                 _chat_history.pop(0)
                 _chat_history.pop(0)
 
-    # NO extraer tareas automáticamente en cada mensaje — el usuario las pide explícitamente
-    # o vienen del worker de chunks durante la escucha de audio
+    # Extraer tareas de la respuesta IA en background (no bloquea)
+    if not es_transcripcion and respuesta_ia.strip():
+        def _extraer_manual():
+            try:
+                publish({"type": "tasks_analyzing"})
+                tareas = extraer_tareas(texto[-500:] + "\n" + respuesta_ia)
+                if isinstance(tareas, dict) and (tareas.get("pendientes") or tareas.get("completadas")):
+                    publish({"type": "task_approval_request",
+                             "req_id": uuid.uuid4().hex[:12],
+                             "tareas": tareas})
+                else:
+                    publish({"type": "tasks_none"})
+            except Exception as e:
+                print(f"[TASKS] Error: {e}", flush=True)
+                publish({"type": "tasks_none"})
+        threading.Thread(target=_extraer_manual, daemon=True).start()
+
     publish({"type": "status", "message": "Listo.", "loading": False})
 
 
@@ -2595,9 +2678,9 @@ def stream():
 
                     timeout_count += 1
 
-                    if timeout_count > 10:
+                    if timeout_count > 40:  # 40 x 30s = 20 min sin actividad
 
-                        print(f"[STREAM] Cliente inactivo >300s, cerrando", flush=True)
+                        print(f"[STREAM] Cliente inactivo >20min, cerrando", flush=True)
 
                         break
 
